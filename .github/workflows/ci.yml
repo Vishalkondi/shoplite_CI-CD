@@ -1,0 +1,183 @@
+# Continuous Integration for ShopLite.
+#
+# Runs on every push and pull request to main, and on demand from the
+# Actions tab. Nothing is deployed, no images are published and no cloud
+# resources are created: all jobs run on free GitHub-hosted runners.
+#
+# Third-party actions are pinned to a full commit SHA (the comment shows the
+# matching version). A tag like "v7" can be moved; a SHA cannot, so the code
+# that runs in CI can't change without a commit to this file.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # adds a "Run workflow" button in the Actions tab
+
+# If you push again while a run is in progress on the same branch, cancel
+# the old run instead of wasting minutes on an outdated commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: the workflow can read the code and nothing else.
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  backend:
+    name: Backend - unit, API and database tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+
+    # A throwaway PostgreSQL that exists only while this job runs. Its
+    # password is not a secret: the container is private to the job and is
+    # destroyed afterwards. The database name ends in _test, which the
+    # destructive database tests require.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: shop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d shop_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://ci:ci_only_password@localhost:5432/shop_test
+      # Makes the database tests FAIL (instead of skip) if the DB is missing,
+      # so CI can never go green without actually running them.
+      REQUIRE_TEST_DATABASE: 'true'
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies (exact versions from package-lock.json)
+        run: npm ci
+
+      - name: Run all tests with coverage thresholds
+        run: npm run test:ci
+
+      - name: Write test summary to the run page
+        if: always()
+        run: node scripts/ci-test-summary.js
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
+  frontend:
+    name: Frontend - production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  docker:
+    name: Docker - build, start and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [backend, frontend] # only runs if both jobs above succeeded
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # .env is never committed. CI builds one from the template with a
+      # throwaway password that only lives for this job.
+      - name: Create .env from the template
+        run: |
+          cp .env.example .env
+          sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-$(openssl rand -hex 12)/" .env
+
+      - name: Validate compose.yaml
+        run: docker compose config --quiet
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start the stack and wait until every service is healthy
+        run: docker compose up --detach --wait --wait-timeout 180
+
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          echo "--- API readiness (backend -> PostgreSQL)"
+          curl --fail --silent --show-error http://localhost:5000/api/health/ready
+          echo
+          echo "--- Products straight from the API"
+          count=$(curl --fail --silent --show-error http://localhost:5000/api/products | jq length)
+          echo "products: $count"
+          test "$count" -ge 12
+          echo "--- Products through the nginx /api proxy"
+          curl --fail --silent --show-error http://localhost:3000/api/products/1 | jq -e '.name and .price'
+          echo "--- Homepage"
+          curl --fail --silent --show-error http://localhost:3000/ | grep -q '<div id="root">'
+          echo "--- SPA fallback for an unknown path"
+          curl --fail --silent --show-error --output /dev/null http://localhost:3000/some/client/route
+          echo "--- Place an order through the proxy"
+          curl --fail --silent --show-error -X POST http://localhost:3000/api/orders \
+            -H 'Content-Type: application/json' \
+            -d '{"customerName":"CI Bot","customerEmail":"ci@example.com","items":[{"productId":1,"quantity":1}]}' \
+            | jq -e '.id and .total == 79.99'
+          echo "All smoke tests passed"
+
+      - name: Show container status and logs on failure
+        if: failure()
+        run: |
+          docker compose ps --all
+          docker compose logs --no-color --timestamps
+
+      - name: Stop and remove containers, networks and the CI database volume
+        if: always()
+        run: docker compose down --volumes --remove-orphans

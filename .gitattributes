@@ -1,0 +1,14 @@
+# Store and check out text files with Unix (LF) line endings on every OS.
+# These files run inside Linux containers and on Linux CI runners, where
+# Windows (CRLF) line endings can break shell scripts and config files.
+* text=auto eol=lf
+
+# Windows-only scripts keep Windows line endings.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files: never touch.
+*.png binary
+*.jpg binary
+*.ico binary
