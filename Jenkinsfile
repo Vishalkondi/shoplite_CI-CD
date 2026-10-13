@@ -23,7 +23,7 @@ pipeline {
   environment {
     COMPOSE_PROJECT_NAME = 'shoplite-jenkins'
     // Shell variables override .env, so these win over the template's ports.
-    FRONTEND_PORT = '8081'
+    FRONTEND_PORT = '8082'
     BACKEND_PORT  = '5001'
     DB_HOST_PORT  = '5434'
   }

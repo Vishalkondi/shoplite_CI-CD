@@ -1,0 +1,66 @@
+# Local Jenkins for learning, separate from compose.yaml (which runs ShopLite).
+#
+#   docker compose -f jenkins-compose.yaml up --build -d
+#   Jenkins UI: http://localhost:8090
+#
+# Jenkins gets its own Docker-in-Docker engine ("docker" service), so pipeline
+# builds can't touch the containers you run yourself in Docker Desktop.
+# DinD needs privileged mode: keep this on your PC, never expose it publicly.
+#
+# Ports 8080 (Jira) and 8081 (the Windows Jenkins service) are already used
+# on this PC, hence 8090 for Jenkins and 8082 for the deployed store.
+name: jenkins-lab
+
+services:
+  docker:
+    image: docker:29-dind
+    privileged: true
+    restart: unless-stopped
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - jenkins-docker-certs:/certs/client
+      # Same volume and path as in the jenkins service: when a pipeline runs
+      # `docker run -v <workspace>:...` or Compose mounts ./backend/db/init.sql,
+      # the path must exist inside this engine too.
+      - jenkins-home:/var/jenkins_home
+    # Containers started by the Jenkinsfile's "Deploy Locally" stage publish
+    # their ports on this engine; these lines forward them to your PC.
+    ports:
+      - "8082:8082" # store
+      - "5001:5001" # API
+      - "5434:5434" # PostgreSQL
+    healthcheck:
+      test: ["CMD-SHELL", "docker info > /dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - jenkins
+
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    restart: unless-stopped
+    depends_on:
+      docker:
+        condition: service_healthy
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_CERT_PATH: /certs/client
+      DOCKER_TLS_VERIFY: "1"
+    ports:
+      - "8090:8080"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - jenkins-docker-certs:/certs/client:ro
+    networks:
+      - jenkins
+
+networks:
+  jenkins:
+
+volumes:
+  jenkins-home:
+  jenkins-docker-certs:

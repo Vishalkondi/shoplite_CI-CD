@@ -1,0 +1,3 @@
+# Dockerfile.jenkins copies nothing from the project, so send no files to the
+# build (otherwise node_modules etc. would be uploaded on every build).
+*
