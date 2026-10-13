@@ -15,4 +15,20 @@ export default defineConfig({
       },
     },
   },
+  // Vitest settings. Tests run in jsdom, a simulated browser, so components
+  // can be rendered and clicked without opening a real one.
+  // Coverage thresholds make `npm run test:coverage` FAIL if coverage drops.
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./tests/setup.js'],
+    include: ['tests/**/*.test.{js,jsx}'],
+    restoreMocks: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/main.jsx'],
+      reporter: ['text', 'lcov', 'json-summary'],
+      thresholds: { statements: 90, branches: 85, functions: 90, lines: 90 },
+    },
+  },
 });

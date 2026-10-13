@@ -47,8 +47,8 @@ cart and place an order. It is built to practise the everyday skills of a full-s
 | REST API: health, products, orders | `backend/src/routes/` |
 | Orders are saved in a **database transaction**: stock is checked and reduced atomically, nothing is saved if any item fails, and concurrent buyers can't oversell | `backend/src/repositories/orderRepository.js` |
 | 3 containers (db, backend, frontend) started with one command | `compose.yaml` |
-| 76 automated tests with coverage thresholds | `backend/tests/` |
-| CI pipeline: tests → build → Docker smoke test | `.github/workflows/ci.yml` |
+| 76 backend tests + 42 frontend tests, both with coverage thresholds | `backend/tests/`, `frontend/tests/` |
+| CI pipeline: backend tests + frontend tests → build → Docker smoke test | `.github/workflows/ci.yml` |
 
 ## 2. Architecture
 
@@ -135,14 +135,16 @@ F:\Full Stack Developer\
     ├── .dockerignore
     ├── nginx.conf                # SPA fallback, /api proxy, caching, security headers
     ├── index.html
-    ├── vite.config.js            # Dev server proxies /api → localhost:5000
+    ├── vite.config.js            # Dev server proxies /api → localhost:5000; Vitest settings
     ├── public/images/products/   # 12 product images (SVG)
-    └── src/
-        ├── main.jsx, App.jsx, styles.css, format.js
-        ├── api/client.js         # Reusable fetch wrapper with error handling
-        ├── hooks/useCart.js      # Cart state + localStorage persistence
-        └── components/           # Header, ProductList, ProductCard, ProductImage,
-                                  # Cart, QuantityControl, Checkout, Confirmation
+    ├── src/
+    │   ├── main.jsx, App.jsx, styles.css, format.js
+    │   ├── api/client.js         # Reusable fetch wrapper with error handling
+    │   ├── hooks/useCart.js      # Cart state + localStorage persistence
+    │   └── components/           # Header, ProductList, ProductCard, ProductImage,
+    │                             # Cart, QuantityControl, Checkout, Confirmation
+    └── tests/                    # Vitest + React Testing Library (setup.js, fixtures.js,
+                                  # App.test.jsx, hooks/, api/, components/)
 ```
 
 ## 5. Prerequisites
@@ -394,6 +396,32 @@ falls below the limits. Services, routes, middleware and `errors.js` are always 
 threshold (85% lines) only applies when the database tests run, because the repositories can only be
 tested against a real database.
 
+**Frontend tests** (Vitest + React Testing Library)
+
+```powershell
+cd "F:\Full Stack Developer\frontend"
+npm install                  # first time only
+
+npm test                     # run every test once
+npm run test:watch           # re-run tests as you save files
+npm run test:coverage        # tests + coverage report (open coverage\index.html)
+```
+
+The tests run in **jsdom**, a simulated browser inside Node, so no real browser or backend is
+needed. The API is mocked; everything else (components, the cart hook, `localStorage`) is real.
+
+| Suite | What it checks |
+|-------|----------------|
+| `tests/hooks/useCart.test.js` | Add, quantity capped at stock, remove, clear, subtotal in exact cents (0.1 + 0.2 = 0.3), saved to and restored from `localStorage`, corrupt or unavailable storage, syncing a saved cart with new prices/stock |
+| `tests/api/client.test.js` | Correct URLs, method and JSON body; server errors become `ApiError` with message and details; non-JSON errors; network failure → status 0 |
+| `tests/components/ProductCard.test.jsx` | Stock labels, "Sold out" / "Max in cart" disabled buttons, image fallback to the emoji icon, empty search results |
+| `tests/components/Cart.test.jsx` | Cart drawer totals and buttons, closing with ✕ and Escape, quantity control limits, header cart badge and navigation |
+| `tests/components/Checkout.test.jsx` | Sends the right order, disables buttons while submitting, shows server errors with details, confirmation page |
+| `tests/App.test.jsx` | Whole store: loading skeletons, error + "Try again", category filter and search, add to cart → checkout → confirmation, saved cart updated with the latest prices |
+
+**Expected result:** `Test Files 6 passed (6)`, `Tests 42 passed (42)`. The coverage thresholds
+(90% statements, lines and functions, 85% branches) are set in `frontend/vite.config.js`.
+
 **Frontend build check**
 
 ```powershell
@@ -470,7 +498,7 @@ manually from **Actions → CI → Run workflow**.
     │
     ├─► backend   (≈1 min)  npm ci → 76 tests against a temporary PostgreSQL → coverage
     │
-    ├─► frontend  (≈1 min)  npm ci → vite build → upload dist/
+    ├─► frontend  (≈1 min)  npm ci → 42 tests → coverage → vite build → upload dist/
     │                    (these two run in parallel)
     └─► docker    (≈3 min)  only if BOTH succeeded:
                             compose config → build images → up --wait →
@@ -480,7 +508,7 @@ manually from **Actions → CI → Run workflow**.
 | Job | Steps | Why it matters |
 |-----|-------|----------------|
 | **backend** | Starts a `postgres:16` *service container* with a `shop_test` database, runs `npm ci` and `npm run test:ci` | Proves the business logic, the API and the real SQL all work. `REQUIRE_TEST_DATABASE=true` makes the job **fail** if the DB tests would be skipped, so it can't go green without running them. A results table is written to the run's Summary page and the coverage report is uploaded as an artifact |
-| **frontend** | `npm ci`, `npm run build`, uploads `dist/` | Proves the React app compiles |
+| **frontend** | `npm ci`, `npm run test:coverage`, `npm run build`, uploads the coverage report and `dist/` | Proves the components and cart logic behave correctly and the React app compiles |
 | **docker** | Creates `.env` from the template with a random password, validates `compose.yaml`, builds images, starts the stack and waits for health checks, then calls `/api/health/ready`, lists products from the API and **through nginx**, loads the homepage and an SPA route, places a real order | Proves the containers work together exactly like on your PC. On failure it prints `docker compose ps` and all logs. It always runs `docker compose down --volumes` at the end |
 
 Good-practice details in the file:
@@ -647,7 +675,7 @@ and volumes for **every** project on your PC, not just ShopLite.
 ## 20. Suggested next learning steps
 
 1. **Linting:** add ESLint + Prettier and a `lint` job to CI.
-2. **Frontend tests:** Vitest + React Testing Library for the cart hook and components.
+2. ~~**Frontend tests:** Vitest + React Testing Library for the cart hook and components.~~ Done: see [Testing](#11-testing).
 3. **End-to-end tests:** Playwright tests that click through the store in a real browser in CI.
 4. **Dependabot:** `.github/dependabot.yml` for automatic dependency and action update PRs.
 5. **Container registry:** build and push images to GitHub Container Registry (`ghcr.io`) on version tags.
