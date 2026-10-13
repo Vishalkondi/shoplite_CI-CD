@@ -94,7 +94,7 @@ jobs:
           retention-days: 7
 
   frontend:
-    name: Frontend - production build
+    name: Frontend - component tests and production build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -113,6 +113,20 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Vitest + React Testing Library in jsdom (a simulated browser). Fails
+      # the job if any test fails or coverage drops below vite.config.js.
+      - name: Run component tests with coverage thresholds
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build production bundle
         run: npm run build
