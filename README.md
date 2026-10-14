@@ -1,57 +1,133 @@
-# ShopLite — learn CI/CD & DevOps with a real e-commerce app
-
 <div align="center">
 
 <img src="docs/images/shoplite-banner.svg" alt="ShopLite — full-stack e-commerce and CI/CD learning project" width="100%" />
 
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=20232A) ![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?logo=jenkins&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088FF?logo=githubactions&logoColor=white)
+# ShopLite
+
+**A small but complete online store, built to practise full-stack development and CI/CD.**
+
+[![CI](https://github.com/Vishalkondi/shoplite_CI-CD/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Vishalkondi/shoplite_CI-CD/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-118%20automated-2ea44f)
+![Cost](https://img.shields.io/badge/cloud%20cost-%240-2ea44f)
+<br />
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=20232A)
+![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088FF?logo=githubactions&logoColor=white)
+![Jenkins](https://img.shields.io/badge/Jenkins-Pipeline-D24939?logo=jenkins&logoColor=white)
+
+[**Quick start**](#-quick-start) ·
+[Architecture](#2-architecture) ·
+[Testing](#11-testing) ·
+[GitHub Actions](#14-the-github-actions-pipeline-explained) ·
+[Jenkins](#15-jenkins-pipeline-local) ·
+[Troubleshooting](#19-common-errors-and-solutions)
+
+<img src="docs/images/shoplite-store-homepage.png" alt="ShopLite store homepage with hero banner, search, category filters and product cards" width="100%" />
+
+<sub><em>The running store: hero banner, search, category filters and product cards with stock and Add to cart.</em></sub>
 
 </div>
 
+---
 
-ShopLite is a small but complete online store: browse products, filter and search, add items to a
-cart and place an order. It is built to practise the everyday skills of a full-stack / DevOps engineer:
-**React, REST APIs, PostgreSQL, Docker, automated tests and GitHub Actions CI**.
+Browse products, filter and search, add items to a cart and place an order — then watch every
+change get tested, built and deployed automatically. ShopLite exists to practise the everyday skills
+of a full-stack / DevOps engineer: **React, REST APIs, PostgreSQL, Docker, automated tests,
+GitHub Actions and Jenkins**.
 
-> 💸 Nothing here deploys to a cloud provider or costs money. GitHub Actions runs on GitHub's free
-> runners (free for public repositories, and within the monthly free minutes for private ones).
-> There is no real payment processing: placing an order only saves it in the database.
+<table>
+  <tr>
+    <td width="33%" valign="top">
+      <h3>🛍️ A real store</h3>
+      Product grid, search, category filters, a persistent cart, checkout and order confirmation.
+    </td>
+    <td width="33%" valign="top">
+      <h3>🔒 Safe orders</h3>
+      Every order is one database transaction: stock is checked and reduced atomically, so buyers can't oversell.
+    </td>
+    <td width="33%" valign="top">
+      <h3>🧪 118 tests</h3>
+      76 backend tests (Jest + real PostgreSQL) and 42 frontend tests (Vitest + React Testing Library).
+    </td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top">
+      <h3>🐳 One command</h3>
+      Database, API and nginx-served frontend start together with <code>docker compose up</code>.
+    </td>
+    <td width="33%" valign="top">
+      <h3>⚙️ GitHub Actions CI</h3>
+      Tests, coverage gates, build and a full Docker smoke test on every push and pull request.
+    </td>
+    <td width="33%" valign="top">
+      <h3>🔧 Jenkins pipeline</h3>
+      A local Jenkins in Docker tests, builds and deploys the stack, then smoke-tests it.
+    </td>
+  </tr>
+</table>
+
+> [!NOTE]
+> Nothing here deploys to a cloud provider or costs money. GitHub Actions runs on GitHub's free
+> runners, Jenkins runs on your own PC, and there is no real payment processing: placing an order
+> only saves it in the database.
+
+## 🚀 Quick start
+
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) running. In PowerShell:
+
+```powershell
+git clone https://github.com/Vishalkondi/shoplite_CI-CD.git
+cd shoplite_CI-CD
+Copy-Item .env.example .env      # then set POSTGRES_PASSWORD in .env
+docker compose up --build -d
+```
+
+Open **http://localhost:3000** once `docker compose ps` shows all three services as **healthy**.
+For hot-reload development, tests and everything else, read on.
 
 ---
 
 ## Contents
 
+<table>
+<tr><td valign="top">
+
+**Get going**
 1. [Project overview](#1-project-overview)
 2. [Architecture](#2-architecture)
 3. [Technology stack](#3-technology-stack)
 4. [Folder structure](#4-folder-structure)
 5. [Prerequisites](#5-prerequisites)
 6. [Docker Desktop setup](#6-docker-desktop-setup)
-7. [PowerShell basics for this project](#7-powershell-basics-for-this-project)
+7. [PowerShell basics](#7-powershell-basics-for-this-project)
 8. [Environment file setup](#8-environment-file-setup)
 9. [Running the application](#9-running-the-application)
-10. [API reference and request examples](#10-api-reference-and-request-examples)
+10. [API reference](#10-api-reference-and-request-examples)
+
+</td><td valign="top">
+
+**Test, ship and operate**
+
 11. [Testing](#11-testing)
-12. [Database integration test setup](#12-database-integration-test-setup)
+12. [Database integration tests](#12-database-integration-test-setup)
 13. [Git and GitHub setup](#13-git-and-github-setup)
-14. [The GitHub Actions pipeline explained](#14-the-github-actions-pipeline-explained)
-    - [Jenkins local CI/CD evidence](#jenkins-local-ci-cd-evidence)
-15. [Docker commands and log inspection](#15-docker-commands-and-log-inspection)
-16. [Stopping and restarting services](#16-stopping-and-restarting-services)
-17. [Safe cleanup](#17-safe-cleanup)
-18. [Common errors and solutions](#18-common-errors-and-solutions)
-19. [Security notes](#19-security-notes)
-20. [Suggested next learning steps](#20-suggested-next-learning-steps)
+14. [GitHub Actions pipeline](#14-the-github-actions-pipeline-explained)
+15. [Jenkins pipeline (local)](#15-jenkins-pipeline-local)
+16. [Docker commands and logs](#16-docker-commands-and-log-inspection)
+17. [Stopping and restarting](#17-stopping-and-restarting-services)
+18. [Safe cleanup](#18-safe-cleanup)
+19. [Common errors and solutions](#19-common-errors-and-solutions)
+20. [Security notes](#20-security-notes)
+21. [Next learning steps](#21-suggested-next-learning-steps)
+
+</td></tr>
+</table>
 
 ---
 
 ## 1. Project overview
-
-<p align="center">
-  <img src="docs/images/shoplite-store-homepage.png" alt="ShopLite store homepage with hero banner, search, category filters and product cards" width="100%" />
-</p>
-
-<p align="center"><em>The running store: hero banner, search, category filters and product cards with stock and Add to cart.</em></p>
 
 | Feature | Where |
 |---------|-------|
@@ -124,13 +200,20 @@ Exact dependency versions are locked in `backend/package-lock.json` and `fronten
 
 ## 4. Folder structure
 
+<details>
+<summary><strong>Show the full folder tree</strong></summary>
+
 ```
 F:\Full Stack Developer\
 ├── compose.yaml                  # Defines the 3 services, volume, health checks, ports
 ├── .env.example                  # Template for .env (copy it; .env is never committed)
 ├── .gitignore                    # Keeps .env, node_modules, build output out of Git
 ├── README.md
-├── .github/workflows/ci.yml      # The CI pipeline
+├── docs/images/                  # Diagrams and screenshots used by this README
+├── .github/workflows/ci.yml      # The GitHub Actions CI pipeline
+├── Jenkinsfile                   # The Jenkins pipeline (test → build → deploy → smoke test)
+├── jenkins-compose.yaml          # Local Jenkins on :8090 with its own Docker engine
+├── Dockerfile.jenkins            # Jenkins image with Docker CLI, Compose and plugins
 ├── backend/
 │   ├── Dockerfile                # Node 22 Alpine image, runs as non-root user
 │   ├── .dockerignore             # Files Docker must not copy into the image
@@ -169,6 +252,8 @@ F:\Full Stack Developer\
                                   # App.test.jsx, hooks/, api/, components/)
 ```
 
+</details>
+
 ## 5. Prerequisites
 
 | Tool | Download | Check it works (PowerShell) |
@@ -201,6 +286,7 @@ If a command is "not recognized", close and reopen PowerShell (PATH changes only
 
    You should see "Hello from Docker!". `--rm` removes the test container afterwards.
 
+> [!TIP]
 > Docker Desktop must be running whenever you use `docker` commands. If you see
 > `failed to connect to the docker API ... dockerDesktopLinuxEngine`, it isn't running.
 
@@ -242,8 +328,9 @@ notepad .env                  # change POSTGRES_PASSWORD to a password of your c
 `.env` is listed in `.gitignore`, so Git never commits it. Only `.env.example` (with a placeholder
 password) is committed.
 
-> ⚠️ PostgreSQL only uses `POSTGRES_PASSWORD` the **first time** the database volume is created.
-> Changing it later causes "password authentication failed". See [section 18](#18-common-errors-and-solutions).
+> [!WARNING]
+> PostgreSQL only uses `POSTGRES_PASSWORD` the **first time** the database volume is created.
+> Changing it later causes "password authentication failed". See [section 19](#19-common-errors-and-solutions).
 
 ## 9. Running the application
 
@@ -300,6 +387,7 @@ npm install
 npm run dev                  # Vite dev server; forwards /api/* to localhost:5000
 ```
 
+> [!NOTE]
 > Stop the Docker `backend` and `frontend` containers first (`docker compose stop backend frontend`)
 > if they are running, otherwise port 5000 is already taken.
 
@@ -337,6 +425,9 @@ A product:
 
 Order request rules: `customerName` 2–100 characters; `customerEmail` a valid address; `items` a
 non-empty list of `{ productId, quantity }` with quantity 1–99. Duplicate product lines are merged.
+
+<details>
+<summary><strong>PowerShell and curl request examples</strong></summary>
 
 ### PowerShell examples (`Invoke-RestMethod`)
 
@@ -384,8 +475,11 @@ curl.exe -i -X POST http://localhost:5000/api/orders -H "Content-Type: applicati
 # -> HTTP/1.1 409 Conflict  (there are only 3 Yoga Mats)
 ```
 
+> [!NOTE]
 > The `\"` escaping is for **Windows PowerShell 5.1** (the built-in one). In **PowerShell 7.3+**
 > remove the backslashes: `--data-raw '{"customerName":"Ada", ...}'`.
+
+</details>
 
 ## 11. Testing
 
@@ -554,63 +648,101 @@ Artifacts (coverage, dist) are at the bottom of the run page.
 skipped. Revert, push, and watch it go green. Then protect `main`: **Settings → Branches → Add branch
 ruleset/rule → Require status checks to pass** and select the three CI jobs.
 
+## 15. Jenkins pipeline (local)
 
-### Jenkins local CI/CD evidence
-
-In addition to GitHub Actions, this project was exercised with a local Jenkins Declarative Pipeline. Jenkins checks out the `jenkins-pipeline` branch and runs these stages: **Checkout → Backend Tests → Frontend Tests & Build → Docker Build → Deploy Locally**. The Jenkins pipeline is manually started with **Build Now** in this learning setup; automatic GitHub webhook triggering is a separate configuration.
+Alongside GitHub Actions, the same project runs through a **Jenkins Declarative Pipeline** on your own
+PC. Jenkins runs in Docker with its own Docker-in-Docker engine, so pipeline builds never touch the
+containers you start yourself.
 
 <p align="center">
   <img src="docs/images/shoplite-cicd-flow.svg" alt="Jenkins pipeline for ShopLite: checkout, testing and build, Docker image creation, deployment and smoke tests" width="100%" />
 </p>
 
+| Stage | What it does |
+|-------|--------------|
+| **Checkout** | Fetches the code from GitHub |
+| **Backend Tests** | `npm ci` + `npm test` inside a throwaway `node:22-alpine` container |
+| **Frontend Tests & Build** | `npm run test:coverage` (42 tests + coverage gate), `npm run build`, archives `dist/` |
+| **Docker Build** | Writes `.env` from the template using the Jenkins credential, validates `compose.yaml`, builds the images |
+| **Deploy Locally** | Starts a separate `shoplite-jenkins` stack, waits for health checks, smoke-tests it from inside the containers |
+
+**Local lab ports** (they differ from the standalone Compose ports used elsewhere in this README):
+
+| Service | URL / port |
+|---------|-----------|
+| Jenkins UI | http://localhost:8090 |
+| Deployed store | http://localhost:8082 |
+| Deployed API | http://localhost:5001 |
+| Deployed PostgreSQL | `localhost:5434` |
+
+### Set it up
+
+```powershell
+cd "F:\Full Stack Developer"
+docker compose -f jenkins-compose.yaml up --build -d     # Jenkins + its Docker engine
+
+# One-time unlock password for the setup wizard (use PowerShell or CMD, not Git Bash):
+docker compose -f jenkins-compose.yaml exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+1. Open http://localhost:8090, paste the password, choose **Install suggested plugins** and create
+   your admin user.
+2. **Manage Jenkins → Credentials → (global) → Add Credentials**: kind **Secret text**, ID
+   **`shoplite-db-password`**, secret = a letters-and-numbers password for the deployed database.
+3. **New Item → Pipeline**: *Pipeline script from SCM* → Git →
+   `https://github.com/Vishalkondi/shoplite_CI-CD.git`, branch `*/main`, script path `Jenkinsfile`.
+4. **Build Now**, then open the build's **Console Output**.
+
+> [!IMPORTANT]
+> Keep the `shoplite-db-password` value fixed. PostgreSQL only reads the password when its volume is
+> first created, so changing it later breaks the deployed database.
+
+> [!CAUTION]
+> Docker-in-Docker needs privileged mode. This setup is for learning on your own PC — never expose
+> Jenkins publicly.
+
+### Build #3: every stage green
+
 <p align="center">
-  <img src="docs/images/jenkins-stage-view-detail.png" alt="Jenkins Stage View detail showing the successful ShopLite Build #3 stages" width="100%" />
+  <img src="docs/images/jenkins-stage-view-detail.png" alt="Jenkins Stage View showing the successful ShopLite Build #3 stages" width="100%" />
 </p>
 
-<p align="center"><em>Jenkins Build #3: all displayed stages completed successfully in approximately two minutes. This is local-run evidence from the supplied Jenkins screen.</em></p>
+<p align="center"><sub><em>Checkout → Backend Tests → Frontend Tests &amp; Build → Docker Build → Deploy Locally, about two minutes end to end. Builds are started with <b>Build Now</b>; GitHub webhook triggers are a separate setup.</em></sub></p>
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/images/jenkins-build-3-success.png" alt="Full Jenkins job page showing successful Build #3" width="100%" /><br />
+      <sub>Job page after Build #3</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/images/jenkins-pipeline-scm-config.png" alt="Jenkins pipeline configuration with repository URL, branch specifier and Jenkinsfile path" width="100%" /><br />
+      <sub>Pipeline job reading <code>Jenkinsfile</code> from GitHub</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/images/jenkins-global-credentials.png" alt="Jenkins dashboard listing the ShopLite pipeline jobs" width="100%" /><br />
+      <sub>Dashboard with the ShopLite pipeline jobs</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/images/jenkins-plugin-setup.png" alt="Jenkins first-run plugin installation screen" width="100%" /><br />
+      <sub>First-run plugin installation</sub>
+    </td>
+  </tr>
+</table>
 
 <details>
-<summary><strong>Full Jenkins Build #3 screen</strong></summary>
+<summary><strong>Fresh Jenkins dashboard (before any jobs)</strong></summary>
 
-<p align="center"><img src="docs/images/jenkins-build-3-success.png" alt="Full Jenkins job page showing successful Build #3" width="100%" /></p>
+<p align="center"><img src="docs/images/jenkins-initial-dashboard.png" alt="Jenkins welcome dashboard in the local lab" width="100%" /></p>
 
 </details>
 
-<details>
-<summary><strong>Jenkins job dashboard</strong></summary>
+The database password lives only in the Jenkins credential store. It is never committed and never
+appears in screenshots or build logs.
 
-<p align="center"><img src="docs/images/jenkins-initial-dashboard.png" alt="Jenkins dashboard in the local lab" width="100%" /></p>
-
-</details>
-
-<details>
-<summary><strong>Pipeline job source configuration</strong></summary>
-
-The Pipeline job is configured to read `Jenkinsfile` from the GitHub repository, using branch `*/jenkins-pipeline`.
-
-<p align="center"><img src="docs/images/jenkins-pipeline-scm-config.png" alt="Jenkins pipeline configuration with repository URL, branch specifier and Jenkinsfile path" width="100%" /></p>
-
-</details>
-
-<details>
-<summary><strong>Jenkins credential configuration</strong></summary>
-
-The credential ID `shoplite-db-password` is configured as **Secret text**. Only its ID and description are shown here; the password must not be committed to the repository or included in screenshots.
-
-<p align="center"><img src="docs/images/jenkins-global-credentials.png" alt="Jenkins global credentials page showing the ShopLite credential ID without exposing the secret" width="100%" /></p>
-
-</details>
-
-<details>
-<summary><strong>Jenkins initial plugin installation</strong></summary>
-
-<p align="center"><img src="docs/images/jenkins-plugin-setup.png" alt="Jenkins first-run plugin installation screen" width="100%" /></p>
-
-</details>
-
-**Jenkins deployment ports in this local lab:** Jenkins UI `http://localhost:8090`, ShopLite store `http://localhost:8082`, backend API `http://localhost:5001`, and PostgreSQL host port `5434`. These differ from the default standalone Compose ports documented elsewhere in this README.
-
-## 15. Docker commands and log inspection
+## 16. Docker commands and log inspection
 
 ```powershell
 docker compose ps                     # status and health of each service
@@ -633,7 +765,8 @@ docker compose exec backend sh              # open a shell inside the backend (t
 docker compose exec db psql -U shop -d shop # SQL prompt inside the database
 ```
 
-Useful `psql` commands:
+<details>
+<summary><strong>Useful <code>psql</code> commands</strong></summary>
 
 ```sql
 \dt                                              -- list tables
@@ -643,7 +776,10 @@ SELECT * FROM order_items WHERE order_id = 1;    -- items of order 1
 \q                                               -- quit
 ```
 
-Other handy commands:
+</details>
+
+<details>
+<summary><strong>Other handy Docker commands</strong></summary>
 
 ```powershell
 docker stats                         # live CPU / memory per container (Ctrl+C to exit)
@@ -652,9 +788,12 @@ docker inspect --format "{{json .State.Health}}" shoplite-backend-1   # health-c
 docker compose config                # the final Compose config with .env values filled in
 ```
 
-> ⚠️ `docker compose config` prints your real password from `.env`. Don't paste its output publicly.
+</details>
 
-## 16. Stopping and restarting services
+> [!WARNING]
+> `docker compose config` prints your real password from `.env`. Don't paste its output publicly.
+
+## 17. Stopping and restarting services
 
 ```powershell
 docker compose stop                  # stop all containers (they still exist; data is kept)
@@ -671,7 +810,7 @@ docker compose up --build -d backend # rebuild/restart only the backend
 The backend handles `stop`/`restart` gracefully: it stops accepting new requests, finishes the ones in
 progress and closes database connections before exiting (`[server] Closed cleanly` in the logs).
 
-## 17. Safe cleanup
+## 18. Safe cleanup
 
 Commands get more destructive as you go down this table:
 
@@ -683,7 +822,8 @@ Commands get more destructive as you go down this table:
 | `docker builder prune` | Docker build cache | ✅ Kept (next build is slower) |
 | **`docker compose down -v`** | Containers, network **and the database volume** | ❌ **DELETED** |
 
-> 🛑 **`docker compose down -v` permanently deletes the `shoplite_db-data` volume: every order, all
+> [!CAUTION]
+> **`docker compose down -v` permanently deletes the `shoplite_db-data` volume: every order, all
 > stock changes and the `shop_test` database.** The next `up` recreates the sample data from
 > `init.sql`. Use it only when you *want* a fresh database (for example after editing `init.sql`, or
 > after changing `POSTGRES_PASSWORD`). There is no undo.
@@ -707,7 +847,7 @@ because Windows PowerShell 5.1 would save it as UTF-16 and corrupt characters su
 Avoid `docker system prune -a --volumes` unless you understand it: it removes **all** unused images
 and volumes for **every** project on your PC, not just ShopLite.
 
-## 18. Common errors and solutions
+## 19. Common errors and solutions
 
 | Symptom | Cause and fix |
 |---------|---------------|
@@ -729,9 +869,9 @@ and volumes for **every** project on your PC, not just ShopLite.
 | CI fails with `Jest: "global" coverage threshold for lines (85%) not met` | New code without tests. Add tests, or look at the coverage artifact to see which lines are untested. |
 | CI docker job fails but tests passed | Open the step **Show container status and logs on failure** in the job log. |
 | Emoji show as `?` in `psql` on Windows | Run `chcp 65001` first to switch the terminal to UTF-8. |
-| Docker is using lots of disk space | `docker system df` to see usage, then the safe commands in section 17. |
+| Docker is using lots of disk space | `docker system df` to see usage, then the safe commands in section 18. |
 
-## 19. Security notes
+## 20. Security notes
 
 - **Secrets stay out of Git.** Real values live only in `.env` files, which `.gitignore` excludes.
   Committed `.env.example` files contain placeholders only. No Dockerfile or workflow contains a
@@ -754,7 +894,7 @@ and volumes for **every** project on your PC, not just ShopLite.
   configured origins.
 - **Out of scope** (it's a learning project): user accounts/authentication, payments, HTTPS, rate limiting.
 
-## 20. Suggested next learning steps
+## 21. Suggested next learning steps
 
 1. **Linting:** add ESLint + Prettier and a `lint` job to CI.
 2. ~~**Frontend tests:** Vitest + React Testing Library for the cart hook and components.~~ Done: see [Testing](#11-testing).
@@ -769,11 +909,14 @@ and volumes for **every** project on your PC, not just ShopLite.
     with manual approval gates in GitHub Actions.
 
 
+
 ---
 
 <div align="center">
 
-**ShopLite — Full-Stack Development + DevOps Learning Project**  
-Architecture, automated testing, containers, and Jenkins / GitHub Actions CI.
+**ShopLite** · full-stack development + DevOps learning project<br />
+<sub>React · Express · PostgreSQL · Docker · GitHub Actions · Jenkins</sub>
+
+[⬆ Back to top](#shoplite)
 
 </div>
