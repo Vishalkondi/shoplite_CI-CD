@@ -47,6 +47,12 @@ cart and place an order. It is built to practise the everyday skills of a full-s
 
 ## 1. Project overview
 
+<p align="center">
+  <img src="docs/images/shoplite-store-homepage.png" alt="ShopLite store homepage with hero banner, search, category filters and product cards" width="100%" />
+</p>
+
+<p align="center"><em>The running store: hero banner, search, category filters and product cards with stock and Add to cart.</em></p>
+
 | Feature | Where |
 |---------|-------|
 | Homepage with hero banner, navigation, product grid with images, category and stock | `frontend/src/App.jsx`, `components/` |

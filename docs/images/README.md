@@ -3,6 +3,7 @@
 These local assets are embedded by the root `README.md`. Keep this `docs/images/` directory beside the root README when committing the documentation.
 
 - `shoplite-banner.svg` — project hero banner and technology stack
+- `shoplite-store-homepage.png` — screenshot of the running store homepage
 - `shoplite-architecture.svg` — application architecture
 - `github-actions-flow.svg` — GitHub Actions workflow (backend/frontend parallel jobs, then Docker)
 - `shoplite-cicd-flow.svg` — Jenkins stage flow for the local lab
