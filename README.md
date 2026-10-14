@@ -2,8 +2,6 @@
 
 <img src="docs/images/shoplite-banner.svg" alt="ShopLite — full-stack e-commerce and CI/CD learning project" width="100%" />
 
-# ShopLite
-
 **A small but complete online store, built to practise full-stack development and CI/CD.**
 
 [![CI](https://github.com/Vishalkondi/shoplite_CI-CD/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Vishalkondi/shoplite_CI-CD/actions/workflows/ci.yml)
@@ -148,7 +146,10 @@ For hot-reload development, tests and everything else, read on.
   <img src="docs/images/shoplite-architecture.svg" alt="ShopLite browser, Nginx, Express API and PostgreSQL architecture" width="100%" />
 </p>
 
-**Request flow:** Browser → Nginx-served React app → Express REST API → PostgreSQL. The original text diagram below provides a compact port-by-port view.
+**Request flow:** Browser → Nginx-served React app → Express REST API → PostgreSQL.
+
+<details>
+<summary><strong>Port-by-port text diagram</strong></summary>
 
 ```
                       Your browser
@@ -174,6 +175,8 @@ For hot-reload development, tests and everything else, read on.
       └────────────────────────────────────────────────────────┘
 ```
 
+</details>
+
 Key ideas:
 
 - Containers talk to each other by **service name** (`backend`, `db`), never `localhost`. Inside a
@@ -191,9 +194,11 @@ Key ideas:
 | Web server | nginx 1.27 | Serves the built files and proxies `/api` to the backend |
 | Backend | Node.js 22, Express 5 | Express 5 forwards errors thrown in `async` routes to the error handler automatically |
 | Database | PostgreSQL 16 + `pg` driver | Transactions, constraints, exact `NUMERIC` money type |
-| Tests | Jest 30, Supertest 7 | Unit tests + real HTTP requests against the Express app |
+| Backend tests | Jest 30, Supertest 7 | Unit tests + real HTTP requests against the Express app |
+| Frontend tests | Vitest, React Testing Library, jsdom | Components and the cart hook tested in a simulated browser |
 | Containers | Docker, Docker Compose | Same environment on every machine and in CI |
-| CI | GitHub Actions | Runs everything automatically on every push |
+| CI | GitHub Actions | Runs everything automatically on every push and pull request |
+| CI/CD (local) | Jenkins in Docker | Tests, builds, deploys and smoke-tests the stack on your PC |
 
 Exact dependency versions are locked in `backend/package-lock.json` and `frontend/package-lock.json`.
 `npm ci` installs exactly those versions, so your PC, Docker and CI all use identical packages.
@@ -483,6 +488,15 @@ curl.exe -i -X POST http://localhost:5000/api/orders -H "Content-Type: applicati
 
 ## 11. Testing
 
+| Suite | Tool | Tests | Runs in |
+|-------|------|------:|---------|
+| 🧩 Backend | Jest 30 + Supertest 7 (+ real PostgreSQL) | **76** | `npm test` · GitHub Actions · Jenkins |
+| 🎨 Frontend | Vitest + React Testing Library (jsdom) | **42** | `npm test` · GitHub Actions · Jenkins |
+
+Both suites have **coverage thresholds**: a drop in coverage fails the run, locally and in CI.
+
+### Backend tests
+
 ```powershell
 cd "F:\Full Stack Developer\backend"
 npm install                  # first time only
@@ -512,7 +526,7 @@ falls below the limits. Services, routes, middleware and `errors.js` are always 
 threshold (85% lines) only applies when the database tests run, because the repositories can only be
 tested against a real database.
 
-**Frontend tests** (Vitest + React Testing Library)
+### Frontend tests
 
 ```powershell
 cd "F:\Full Stack Developer\frontend"
@@ -538,7 +552,7 @@ needed. The API is mocked; everything else (components, the cart hook, `localSto
 **Expected result:** `Test Files 6 passed (6)`, `Tests 42 passed (42)`. The coverage thresholds
 (90% statements, lines and functions, 85% branches) are set in `frontend/vite.config.js`.
 
-**Frontend build check**
+### Frontend build check
 
 ```powershell
 cd "F:\Full Stack Developer\frontend"
@@ -613,6 +627,9 @@ git push -u origin feature/better-search
 File: `.github/workflows/ci.yml`. It runs on **push to `main`**, on **pull requests into `main`**, and
 manually from **Actions → CI → Run workflow**.
 
+<details>
+<summary><strong>Text version of the workflow</strong></summary>
+
 ```
  push / PR
     │
@@ -624,6 +641,8 @@ manually from **Actions → CI → Run workflow**.
                             compose config → build images → up --wait →
                             smoke tests → logs on failure → down (always)
 ```
+
+</details>
 
 | Job | Steps | Why it matters |
 |-----|-------|----------------|
@@ -643,10 +662,11 @@ Good-practice details in the file:
 Viewing results on GitHub: **Actions** tab → click a run → click a job to see each step's log.
 Artifacts (coverage, dist) are at the bottom of the run page.
 
-**Try it:** break a test on purpose (e.g. in `tests/unit/orderService.test.js` change
-`expect(total).toBe(0.3)` to `0.4`), commit and push, and watch the pipeline fail and the docker job get
-skipped. Revert, push, and watch it go green. Then protect `main`: **Settings → Branches → Add branch
-ruleset/rule → Require status checks to pass** and select the three CI jobs.
+> [!TIP]
+> **Try it:** break a test on purpose (e.g. in `tests/unit/orderService.test.js` change
+> `expect(total).toBe(0.3)` to `0.4`), commit and push, and watch the pipeline fail and the docker job get
+> skipped. Revert, push, and watch it go green. Then protect `main`: **Settings → Branches → Add branch
+> ruleset/rule → Require status checks to pass** and select the three CI jobs.
 
 ## 15. Jenkins pipeline (local)
 
@@ -709,31 +729,38 @@ docker compose -f jenkins-compose.yaml exec jenkins cat /var/jenkins_home/secret
 
 <p align="center"><sub><em>Checkout → Backend Tests → Frontend Tests &amp; Build → Docker Build → Deploy Locally, about two minutes end to end. Builds are started with <b>Build Now</b>; GitHub webhook triggers are a separate setup.</em></sub></p>
 
-<table>
-  <tr>
-    <td width="50%" align="center">
-      <img src="docs/images/jenkins-build-3-success.png" alt="Full Jenkins job page showing successful Build #3" width="100%" /><br />
-      <sub>Job page after Build #3</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="docs/images/jenkins-pipeline-scm-config.png" alt="Jenkins pipeline configuration with repository URL, branch specifier and Jenkinsfile path" width="100%" /><br />
-      <sub>Pipeline job reading <code>Jenkinsfile</code> from GitHub</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="docs/images/jenkins-global-credentials.png" alt="Jenkins dashboard listing the ShopLite pipeline jobs" width="100%" /><br />
-      <sub>Dashboard with the ShopLite pipeline jobs</sub>
-    </td>
-    <td width="50%" align="center">
-      <img src="docs/images/jenkins-plugin-setup.png" alt="Jenkins first-run plugin installation screen" width="100%" /><br />
-      <sub>First-run plugin installation</sub>
-    </td>
-  </tr>
-</table>
+**More screenshots** (click to expand):
 
 <details>
-<summary><strong>Fresh Jenkins dashboard (before any jobs)</strong></summary>
+<summary>📸 Job page after Build #3</summary>
+
+<p align="center"><img src="docs/images/jenkins-build-3-success.png" alt="Full Jenkins job page showing successful Build #3" width="100%" /></p>
+
+</details>
+
+<details>
+<summary>📸 Pipeline job reading <code>Jenkinsfile</code> from GitHub</summary>
+
+<p align="center"><img src="docs/images/jenkins-pipeline-scm-config.png" alt="Jenkins pipeline configuration with repository URL, branch specifier and Jenkinsfile path" width="100%" /></p>
+
+</details>
+
+<details>
+<summary>📸 Dashboard with the ShopLite pipeline jobs</summary>
+
+<p align="center"><img src="docs/images/jenkins-global-credentials.png" alt="Jenkins dashboard listing the ShopLite pipeline jobs" width="100%" /></p>
+
+</details>
+
+<details>
+<summary>📸 First-run plugin installation</summary>
+
+<p align="center"><img src="docs/images/jenkins-plugin-setup.png" alt="Jenkins first-run plugin installation screen" width="100%" /></p>
+
+</details>
+
+<details>
+<summary>📸 Fresh Jenkins dashboard (before any jobs)</summary>
 
 <p align="center"><img src="docs/images/jenkins-initial-dashboard.png" alt="Jenkins welcome dashboard in the local lab" width="100%" /></p>
 
@@ -917,6 +944,6 @@ and volumes for **every** project on your PC, not just ShopLite.
 **ShopLite** · full-stack development + DevOps learning project<br />
 <sub>React · Express · PostgreSQL · Docker · GitHub Actions · Jenkins</sub>
 
-[⬆ Back to top](#shoplite)
+[⬆ Back to top](#top)
 
 </div>
