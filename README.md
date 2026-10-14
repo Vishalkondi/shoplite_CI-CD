@@ -1,5 +1,13 @@
-![Uploading Screenshot 2026-10-13 172405.png…]()
 # ShopLite — learn CI/CD & DevOps with a real e-commerce app
+
+<div align="center">
+
+<img src="docs/images/shoplite-banner.svg" alt="ShopLite — full-stack e-commerce and CI/CD learning project" width="100%" />
+
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=20232A) ![Node.js](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white) ![Jenkins](https://img.shields.io/badge/Jenkins-CI%2FCD-D24939?logo=jenkins&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088FF?logo=githubactions&logoColor=white)
+
+</div>
+
 
 ShopLite is a small but complete online store: browse products, filter and search, add items to a
 cart and place an order. It is built to practise the everyday skills of a full-stack / DevOps engineer:
@@ -27,6 +35,7 @@ cart and place an order. It is built to practise the everyday skills of a full-s
 12. [Database integration test setup](#12-database-integration-test-setup)
 13. [Git and GitHub setup](#13-git-and-github-setup)
 14. [The GitHub Actions pipeline explained](#14-the-github-actions-pipeline-explained)
+    - [Jenkins local CI/CD evidence](#jenkins-local-ci-cd-evidence)
 15. [Docker commands and log inspection](#15-docker-commands-and-log-inspection)
 16. [Stopping and restarting services](#16-stopping-and-restarting-services)
 17. [Safe cleanup](#17-safe-cleanup)
@@ -52,6 +61,12 @@ cart and place an order. It is built to practise the everyday skills of a full-s
 | CI pipeline: tests → build → Docker smoke test | `.github/workflows/ci.yml` |
 
 ## 2. Architecture
+
+<p align="center">
+  <img src="docs/images/shoplite-architecture.svg" alt="ShopLite browser, Nginx, Express API and PostgreSQL architecture" width="100%" />
+</p>
+
+**Request flow:** Browser → Nginx-served React app → Express REST API → PostgreSQL. The original text diagram below provides a compact port-by-port view.
 
 ```
                       Your browser
@@ -463,6 +478,10 @@ git push -u origin feature/better-search
 
 ## 14. The GitHub Actions pipeline explained
 
+<p align="center">
+  <img src="docs/images/github-actions-flow.svg" alt="GitHub Actions CI workflow with backend and frontend jobs in parallel, followed by Docker smoke tests" width="100%" />
+</p>
+
 File: `.github/workflows/ci.yml`. It runs on **push to `main`**, on **pull requests into `main`**, and
 manually from **Actions → CI → Run workflow**.
 
@@ -500,6 +519,62 @@ Artifacts (coverage, dist) are at the bottom of the run page.
 `expect(total).toBe(0.3)` to `0.4`), commit and push, and watch the pipeline fail and the docker job get
 skipped. Revert, push, and watch it go green. Then protect `main`: **Settings → Branches → Add branch
 ruleset/rule → Require status checks to pass** and select the three CI jobs.
+
+
+### Jenkins local CI/CD evidence
+
+In addition to GitHub Actions, this project was exercised with a local Jenkins Declarative Pipeline. Jenkins checks out the `jenkins-pipeline` branch and runs these stages: **Checkout → Backend Tests → Frontend Tests & Build → Docker Build → Deploy Locally**. The Jenkins pipeline is manually started with **Build Now** in this learning setup; automatic GitHub webhook triggering is a separate configuration.
+
+<p align="center">
+  <img src="docs/images/shoplite-cicd-flow.svg" alt="Jenkins pipeline for ShopLite: checkout, testing and build, Docker image creation, deployment and smoke tests" width="100%" />
+</p>
+
+<p align="center">
+  <img src="docs/images/jenkins-stage-view-detail.png" alt="Jenkins Stage View detail showing the successful ShopLite Build #3 stages" width="100%" />
+</p>
+
+<p align="center"><em>Jenkins Build #3: all displayed stages completed successfully in approximately two minutes. This is local-run evidence from the supplied Jenkins screen.</em></p>
+
+<details>
+<summary><strong>Full Jenkins Build #3 screen</strong></summary>
+
+<p align="center"><img src="docs/images/jenkins-build-3-success.png" alt="Full Jenkins job page showing successful Build #3" width="100%" /></p>
+
+</details>
+
+<details>
+<summary><strong>Jenkins job dashboard</strong></summary>
+
+<p align="center"><img src="docs/images/jenkins-initial-dashboard.png" alt="Jenkins dashboard in the local lab" width="100%" /></p>
+
+</details>
+
+<details>
+<summary><strong>Pipeline job source configuration</strong></summary>
+
+The Pipeline job is configured to read `Jenkinsfile` from the GitHub repository, using branch `*/jenkins-pipeline`.
+
+<p align="center"><img src="docs/images/jenkins-pipeline-scm-config.png" alt="Jenkins pipeline configuration with repository URL, branch specifier and Jenkinsfile path" width="100%" /></p>
+
+</details>
+
+<details>
+<summary><strong>Jenkins credential configuration</strong></summary>
+
+The credential ID `shoplite-db-password` is configured as **Secret text**. Only its ID and description are shown here; the password must not be committed to the repository or included in screenshots.
+
+<p align="center"><img src="docs/images/jenkins-global-credentials.png" alt="Jenkins global credentials page showing the ShopLite credential ID without exposing the secret" width="100%" /></p>
+
+</details>
+
+<details>
+<summary><strong>Jenkins initial plugin installation</strong></summary>
+
+<p align="center"><img src="docs/images/jenkins-plugin-setup.png" alt="Jenkins first-run plugin installation screen" width="100%" /></p>
+
+</details>
+
+**Jenkins deployment ports in this local lab:** Jenkins UI `http://localhost:8090`, ShopLite store `http://localhost:8082`, backend API `http://localhost:5001`, and PostgreSQL host port `5434`. These differ from the default standalone Compose ports documented elsewhere in this README.
 
 ## 15. Docker commands and log inspection
 
@@ -658,3 +733,13 @@ and volumes for **every** project on your PC, not just ShopLite.
 9. **Kubernetes:** run the same images on a local cluster (kind or Docker Desktop's Kubernetes).
 10. **Deployment** (when you're ready to learn it, and aware of costs): staging/production environments
     with manual approval gates in GitHub Actions.
+
+
+---
+
+<div align="center">
+
+**ShopLite — Full-Stack Development + DevOps Learning Project**  
+Architecture, automated testing, containers, and Jenkins / GitHub Actions CI.
+
+</div>
