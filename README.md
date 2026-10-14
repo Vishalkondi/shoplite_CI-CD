@@ -1,3 +1,4 @@
+![Uploading Screenshot 2026-10-13 172405.png…]()
 # ShopLite — learn CI/CD & DevOps with a real e-commerce app
 
 ShopLite is a small but complete online store: browse products, filter and search, add items to a
